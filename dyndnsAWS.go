@@ -1,6 +1,6 @@
-//AWS DNS Update part of this Programm is based on https://github.com/agorf/dyndns53
-
 package dyndns
+
+//AWS DNS Update part of this Programm is based on https://github.com/agorf/dyndns53
 
 import (
 	"fmt"
