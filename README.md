@@ -1,4 +1,4 @@
-# README
+# dyndns
 
 Dyndns Library
 
