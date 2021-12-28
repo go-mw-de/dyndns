@@ -1,16 +1,17 @@
-//AWS DNS Update part of this Programm is based on https://github.com/agorf/dyndns53
-
 package dyndns
 
 import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/echtwerner/appengine/collection"
 )
 
 type DomainGAE struct {
-	Data collection.Domain
+	Name         string
+	ZoneID       string
+	AccessKey    string
+	AccessSecret string
+	TTL          int64
 }
 
 type recordSetGAE struct {

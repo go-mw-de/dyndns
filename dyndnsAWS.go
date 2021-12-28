@@ -10,11 +10,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/echtwerner/appengine/collection"
 )
 
 type DomainAWS struct {
-	Data collection.Domain
+	Name         string
+	ZoneID       string
+	AccessKey    string
+	AccessSecret string
+	TTL          int64
 }
 
 // Dns Provider Section
@@ -39,16 +42,16 @@ func (d DomainAWS) Delete(h string, ip string) error {
 }
 
 func (d DomainAWS) Update(h string, ip string) error {
-	log.Infof("%T.Update(): hostname: %s, domain.ZoneID %s, domain.Name: %s", d, h, d.Data.ZoneID, d.Data.Name)
+	log.Infof("%T.Update(): hostname: %s, domain.ZoneID %s, domain.Name: %s", d, h, d.ZoneID, d.Name)
 	// Create Change Record
 	recSet := recordSetAWS{
 		names:        []string{h},
 		rsType:       "A",
-		ttl:          d.Data.TTL,
-		hostedZoneID: d.Data.ZoneID,
+		ttl:          d.TTL,
+		hostedZoneID: d.ZoneID,
 		value:        ip,
 	}
-	svc, err := service(d.Data.AccessKey, d.Data.AccessSecret)
+	svc, err := service(d.AccessKey, d.AccessSecret)
 	if err != nil {
 		return fmt.Errorf("%T.Update(): %v", d, err)
 	}
