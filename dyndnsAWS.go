@@ -43,10 +43,22 @@ func (d DomainAWS) Delete(h string, ip string) error {
 
 func (d DomainAWS) Update(h string, ip string) error {
 	log.Infof("%T.Update(): hostname: %s, domain.ZoneID %s, domain.Name: %s", d, h, d.ZoneID, d.Name)
+
+	// Validate hostname
+	if err := validateHostname(h); err != nil {
+		return err
+	}
+
+	// Determine record type
+	rs, err := rsType(ip)
+	if err != nil {
+		return err
+	}
+
 	// Create Change Record
 	recSet := recordSetAWS{
 		names:        []string{h},
-		rsType:       "A",
+		rsType:       rs,
 		ttl:          d.TTL,
 		hostedZoneID: d.ZoneID,
 		value:        ip,
