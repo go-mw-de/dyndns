@@ -29,10 +29,8 @@ type recordSetAWS struct {
 	hostedZoneID string // "hosted zone id"
 }
 
-// TBD
 func (d DomainAWS) Add(h string, ip string) error {
-	log.Fatalf("%T.Add(): Not yet implemented", d)
-	return fmt.Errorf("Not yet implemented")
+	return d.Update(h, ip)
 }
 
 // TBD
