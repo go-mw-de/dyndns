@@ -1,4 +1,4 @@
-module gitlab.com/go-mw-de/dyndns
+module github.com/go-mw-de/dyndns
 
 go 1.26
 
