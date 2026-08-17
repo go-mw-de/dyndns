@@ -1,0 +1,67 @@
+name: Warm module proxy
+
+# The import path go-mw.de/pkg/dyndns is resolved through meta tags served by
+# go-mw-de/appengine. proxy.golang.org caches a module version permanently once
+# it has fetched it, and serves it afterwards without ever contacting go-mw.de -
+# which is what keeps an outage of that service from blocking builds.
+#
+# This job asks the proxy for the freshly pushed tag while go-mw.de is known to
+# be healthy, so the version is cached before anybody needs it. See
+# docs/vanity-imports.md in the appengine repository.
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: read
+
+jobs:
+  warm:
+    name: Publish the tag to proxy.golang.org
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      # Explicitly without the "direct" fallback: the point is to make the proxy
+      # itself fetch and cache the version, not to resolve it locally.
+      #
+      # The check runs "go get" from a throwaway module, i.e. the way a consumer
+      # would reach the tag. That matters: "go list -m module@version" also
+      # warms the cache, but it exits 0 even when the downloaded go.mod declares
+      # a different module path, so it would report a broken release as healthy.
+      # "go get" is what rejects the mismatch.
+      - name: Request the tag from the proxy
+        env:
+          GOPROXY: https://proxy.golang.org
+          GOFLAGS: -mod=mod
+        run: |
+          module="$(go list -m)"
+          version="${GITHUB_REF_NAME}"
+          echo "Warming ${module}@${version}"
+
+          consumer="$(mktemp -d)"
+          cd "${consumer}"
+          go mod init warmproxy.invalid/consumer
+
+          # The proxy resolves the vanity path via go-mw.de and needs a moment
+          # for a version it has never seen.
+          for attempt in 1 2 3 4 5; do
+            if go get "${module}@${version}"; then
+              echo "Cached by proxy.golang.org and importable as ${module}"
+              exit 0
+            fi
+            echo "Not available yet, retrying in $((attempt * 15))s"
+            sleep $((attempt * 15))
+          done
+
+          echo "::error::${module}@${version} is not usable through proxy.golang.org."
+          echo "::error::Either https://go-mw.de/pkg/ is not serving the go-import"
+          echo "::error::meta tags, or go.mod does not declare the module as ${module}."
+          exit 1
